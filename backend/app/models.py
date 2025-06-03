@@ -8,6 +8,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, nullable=False, unique=True)
     email: Optional[str] = Field(default=None, unique=True)
+    organization: Optional[str] = Field(default=None)
     password_hash: str
     role: str = Field(default="user", regex="^(user|moderator|admin)$")
     created_at: datetime = Field(default_factory=datetime.utcnow)
