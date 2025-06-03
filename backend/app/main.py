@@ -20,7 +20,13 @@ from app.models import User
 DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/app"
 engine = create_engine(DATABASE_URL)
 
-app = FastAPI()
+app = FastAPI(
+    title="SCSP AI+ Hackathon 2025",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    root_path="/api"
+)
 
 # Allow all origins, methods, and headers (for development)
 app.add_middleware(
@@ -127,22 +133,18 @@ from app.routes.vote import app as vote_router
 app.include_router(
     user_router,
     tags=["users"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     thread_router,
     tags=["threads"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     comment_router,
     tags=["comments"],
-    dependencies=[Depends(get_current_user)],
 )
 
 app.include_router(
     vote_router,
     tags=["votes"],
-    dependencies=[Depends(get_current_user)],
 )
 
