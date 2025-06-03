@@ -9,11 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar";
-import { SidebarFooter } from "./ui/sidebar";
-import { useAuth } from "../AuthProvider";
-import { Button } from "./ui/button";
+} from "../components/ui/sidebar";
 
 // This is sample data.
 const data = {
@@ -61,7 +57,6 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useAuth();
   return (
     <Sidebar {...props}>
       <SidebarContent className="bg-gray-800 ">
@@ -75,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {item.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
+                    <SidebarMenuButton asChild>
                       <a href={item.url}>{item.title}</a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
