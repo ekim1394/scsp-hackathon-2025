@@ -10,53 +10,56 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../components/ui/sidebar";
-
-// This is sample data.
-const data = {
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
-  navMain: [
-    {
-      title: "Posts",
-      url: "/",
-      items: [
-        {
-          title: "All Posts",
-          url: "/posts",
-        },
-      ],
-    },
-    {
-      title: "Comments",
-      url: "#",
-      items: [
-        {
-          title: "Your Comments",
-          url: "/comments/me",
-        },
-        {
-          title: "Top Comments",
-          url: "/comments/top",
-        },
-      ],
-    },
-    {
-      title: "Users",
-      url: "#",
-      items: [
-        {
-          title: "Profile",
-          url: "/users/me",
-        },
-        {
-          title: "All Users",
-          url: "/users",
-        },
-      ],
-    },
-  ],
-};
+import { useAuth } from "../AuthProvider";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+
+  const data = {
+    navMain: [
+      {
+        title: "Posts",
+        url: "/",
+        items: [
+          {
+            title: "All Posts",
+            url: "/posts",
+          },
+        ],
+      },
+
+      // Only show Users group if user is present
+      ...(user
+        ? [
+            {
+              title: "Comments",
+              url: "#",
+              items: [
+                {
+                  title: "Your Comments",
+                  url: "/comments/me",
+                },
+              ],
+            },
+            {
+              title: "User",
+              url: "#",
+              items: [
+                {
+                  title: "Profile",
+                  url: "/users/me",
+                },
+                {
+                  title: "All Users",
+                  url: "/users",
+                },
+              ],
+            },
+          ]
+        : []),
+    ],
+  };
+
   return (
     <Sidebar {...props}>
       <SidebarContent className="bg-gray-800 ">

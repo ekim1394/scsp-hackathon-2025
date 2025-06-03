@@ -15,7 +15,7 @@ export const Route = createRootRoute({
 
         <div className="w-full">
           <Header />
-          <main className="min-h-screen flex flex-col items-center justify-start bg-black">
+          <main className="min-h-screen flex flex-col justify-start bg-black">
             <Outlet />
           </main>
           <Footer />

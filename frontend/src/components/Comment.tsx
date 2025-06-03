@@ -10,12 +10,19 @@ export interface IVote {
   user_id: number;
 }
 
+export interface IUser {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  organization: string;
+}
 export interface IComment {
   id: number;
   content: string;
   created_at: Date;
-  user_id: string;
-  thread_id: string;
+  user: IUser;
+  thread_id: number;
   parent_comment_id?: string;
   vote: IVote[];
 }
@@ -71,7 +78,14 @@ export default function Comment({ comment }: { comment: IComment }) {
     <li key={comment.id} className="bg-black p-3">
       <div className="font-bold mb-4 flex items-center justify-between">
         <span className="flex items-center space-x-2">
-          {comment.user_id} -{" "}
+          (
+          <a
+            href={`mailto:${comment.user.email}`}
+            className="underline text-blue-400 hover:text-blue-200"
+          >
+            {comment.user.username}
+          </a>
+          {"  "}| {comment.user.organization}) -{" "}
           {(() => {
             const easternDate = new Date(comment.created_at);
             const isDST = (() => {

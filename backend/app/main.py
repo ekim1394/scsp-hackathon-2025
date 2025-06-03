@@ -78,8 +78,9 @@ def on_startup():
 
 class UserCreate(BaseModel):
     username: str
-    email: str
+    email: str | None = None
     password: str
+    organization: str | None = None
 
 class UserLogin(BaseModel):
     username: str
@@ -99,7 +100,7 @@ def login(username: Annotated[str, Form()], password: Annotated[str, Form()], se
     token = create_access_token(data={"sub": str(user.id)})
     return Token(access_token=token, user_id=user.id)
 
-@app.post("/register", response_model=Token)
+@app.post("/signup", response_model=Token)
 def register(user_create: UserCreate, session: Session = Depends(get_session)):
     existing = session.exec(select(User).where(User.username == user_create.username)).first()
     if existing:
@@ -108,7 +109,8 @@ def register(user_create: UserCreate, session: Session = Depends(get_session)):
     user = User(
         username=user_create.username,
         email=user_create.email,
-        password_hash=hash_password(user_create.password)
+        password_hash=hash_password(user_create.password),
+        organization=user_create.organization
     )
     session.add(user)
     session.commit()

@@ -41,6 +41,36 @@ def create_comment(comment: CommentCreate, session: Session = Depends(get_sessio
     session.refresh(new_comment)
     return new_comment
 
+@app.get("/comments", response_model=list[CommentView])
+def read_all_comments(skip: int = 0, limit: int = 10, session: Session = Depends(get_session)):
+    comments = session.exec(
+        select(Comment, User, Vote)
+        .join(User, Comment.user_id == User.id)
+        .join(Vote, Vote.comment_id == Comment.id, isouter=True)
+        .where(Comment.user_id == User.id)
+        .offset(skip).limit(limit).order_by(Comment.id.desc())
+    )
+    view = []
+    for c, u, v in comments:
+        comment = CommentView(
+            id=c.id,
+            thread_id=c.thread_id,
+            content=c.content,
+            created_at=c.created_at,
+            parent_comment_id=c.parent_comment_id,
+            user=UserView(
+                id=u.id,
+                username=u.username,
+                email=u.email,
+                role=u.role,
+                organization=u.organization,
+            ),
+            vote=[v] if v else []
+        )
+        view.append(comment)
+        
+    return view
+
 @app.get("/comments/{thread_id}", response_model=list[CommentView])
 def read_comments(thread_id: int, session: Session = Depends(get_session)):
     comments = session.exec(
@@ -61,7 +91,8 @@ def read_comments(thread_id: int, session: Session = Depends(get_session)):
                 id=u.id,
                 username=u.username,
                 email=u.email,
-                role=u.role
+                role=u.role,
+                organization= u.organization,
             ),
             vote=[v] if v else []
         )

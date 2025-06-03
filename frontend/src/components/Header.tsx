@@ -1,15 +1,16 @@
 import { useAuth } from "../AuthProvider";
 import CreatePostDialog from "./CreatePostDialog";
 import LoginDialog from "./LoginDialog";
+import SignupDialog from "./SignupDialog";
 import { Button } from "./ui/button";
 import { SidebarTrigger } from "./ui/sidebar";
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    const query: string = (event.target as HTMLInputElement).value;
-    console.log("Search query:", query);
-  };
+  // const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  //   const query: string = (event.target as HTMLInputElement).value;
+  //   console.log("Search query:", query);
+  // };
 
   return (
     <header className="flex flex-row items-center justify-between p-4 bg-gray-800 text-white z-10">
@@ -44,7 +45,10 @@ export default function Header() {
             </Button>
           </div>
         ) : (
-          <LoginDialog />
+          <div className="flex flex-row items-center gap-2">
+            <SignupDialog />
+            <LoginDialog />
+          </div>
         )}
       </div>
     </header>

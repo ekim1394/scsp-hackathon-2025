@@ -26,7 +26,8 @@ export default function Post({ thread }: { thread: IPost }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const voteCount = thread.vote.reduce((acc, v) => acc + v.value, 0);
+  console.log(thread);
+  const voteCount = thread.vote?.reduce((acc, v) => acc + v.value, 0);
 
   const mutation = useMutation({
     mutationFn: ({

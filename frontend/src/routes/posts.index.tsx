@@ -20,7 +20,7 @@ function RouteComponent() {
   const threads = threadsQuery.data ?? [];
 
   return (
-    <div className="flex flex-col p-4 lg:max-w-4xl w-full">
+    <div className="flex flex-col p-4 lg:max-w-4xl w-full mx-auto">
       {threads.length === 0 ? (
         <div className="text-lg text-center">
           No threads available. Start a new discussion!

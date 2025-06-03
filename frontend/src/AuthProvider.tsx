@@ -13,6 +13,12 @@ type AuthContextType = {
   user: number | null;
   login: (credentials: { username: string; password: string }) => void;
   logout: () => void;
+  signup: (signup: {
+    username: string;
+    email?: string;
+    organization?: string;
+    password: string;
+  }) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,8 +100,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const createUser = useMutation({
+    mutationFn: ({
+      username,
+      email,
+      organization,
+      password,
+    }: {
+      username: string;
+      email?: string;
+      organization?: string;
+      password: string;
+    }) => {
+      const body = {
+        username,
+        password,
+        ...(email && { email }),
+        ...(organization && { organization }),
+      };
+      return apiClient.post("/signup", body, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+  });
+
+  const signup = ({
+    username,
+    email,
+    organization,
+    password,
+  }: {
+    username: string;
+    email?: string;
+    organization?: string;
+    password: string;
+  }) => {
+    createUser.mutate(
+      { username, email, organization, password },
+      {
+        onSuccess: () => {
+          toast.success("User created successfully");
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: (error: any) => {
+          const errorMessage =
+            error?.response?.data?.detail || "Unknown error occurred";
+          toast.error("Signup failed: " + errorMessage);
+        },
+      }
+    );
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, signup }}>
       {children}
     </AuthContext.Provider>
   );

@@ -53,7 +53,7 @@ function RouteComponent() {
     return <div>Loading...</div>;
   }
   return (
-    <div className="flex flex-col p-4 lg:max-w-4xl w-full">
+    <div className="flex flex-col p-4 lg:max-w-4xl w-full mx-auto">
       <Post thread={post.data} />
       <hr className="my-4 border-t-2 border-solid border-white" />
       <div className="flex flex-row mb-4">
