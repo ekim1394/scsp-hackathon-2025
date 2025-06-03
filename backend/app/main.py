@@ -88,6 +88,7 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user_id: int | None = None
 
 @app.post("/login", response_model=Token)
 def login(username: Annotated[str, Form()], password: Annotated[str, Form()], session: Session = Depends(get_session)):
@@ -96,7 +97,7 @@ def login(username: Annotated[str, Form()], password: Annotated[str, Form()], se
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     token = create_access_token(data={"sub": str(user.id)})
-    return Token(access_token=token)
+    return Token(access_token=token, user_id=user.id)
 
 @app.post("/register", response_model=Token)
 def register(user_create: UserCreate, session: Session = Depends(get_session)):

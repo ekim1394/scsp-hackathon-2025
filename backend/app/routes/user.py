@@ -1,5 +1,6 @@
 
 
+from pydantic import BaseModel
 from app.main import get_session
 from app.models import User
 from fastapi import Depends
@@ -7,6 +8,12 @@ from sqlmodel import Session, select
 from fastapi import APIRouter, HTTPException
 
 app = APIRouter()
+
+class UserView(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
 
 @app.get("/users")
 def read_users(skip: int = 0, limit: int = 10, session: Session = Depends(get_session)):

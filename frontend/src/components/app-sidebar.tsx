@@ -11,26 +11,21 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { SidebarFooter } from "./ui/sidebar";
+import { useAuth } from "../AuthProvider";
+import { Button } from "./ui/button";
 
 // This is sample data.
 const data = {
   versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
   navMain: [
     {
-      title: "Threads",
-      url: "#",
+      title: "Posts",
+      url: "/",
       items: [
         {
-          title: "Your Posts",
-          url: "#",
-        },
-        {
-          title: "Community Posts",
-          url: "#",
-        },
-        {
-          title: "Top Posts",
-          url: "#",
+          title: "All Posts",
+          url: "/posts",
         },
       ],
     },
@@ -40,11 +35,11 @@ const data = {
       items: [
         {
           title: "Your Comments",
-          url: "#",
+          url: "/comments/me",
         },
         {
           title: "Top Comments",
-          url: "#",
+          url: "/comments/top",
         },
       ],
     },
@@ -54,11 +49,11 @@ const data = {
       items: [
         {
           title: "Profile",
-          url: "#",
+          url: "/users/me",
         },
         {
           title: "All Users",
-          url: "#",
+          url: "/users",
         },
       ],
     },
@@ -66,6 +61,7 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuth();
   return (
     <Sidebar {...props}>
       <SidebarContent className="bg-gray-800 ">

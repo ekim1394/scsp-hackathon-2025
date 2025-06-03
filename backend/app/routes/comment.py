@@ -1,10 +1,13 @@
 
 
+from datetime import datetime
 from app.main import get_current_user, get_session
-from app.models import Comment, User
+from app.models import Comment, User, Vote
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
+from app.routes.user import UserView
 
 app = APIRouter()
 
@@ -14,7 +17,14 @@ class CommentCreate(BaseModel):
     parent_id: int | None = None
     user_id: int | None = None
     
-
+class CommentView(BaseModel):
+    id: int
+    thread_id: int
+    content: str
+    created_at: datetime
+    parent_comment_id: int | None = None
+    user: UserView
+    vote: list[Vote] = []
 
 @app.post("/comment", response_model=Comment)
 def create_comment(comment: CommentCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
@@ -31,14 +41,33 @@ def create_comment(comment: CommentCreate, session: Session = Depends(get_sessio
     session.refresh(new_comment)
     return new_comment
 
-@app.get("/comments/{thread_id}", response_model=list[Comment])
+@app.get("/comments/{thread_id}", response_model=list[CommentView])
 def read_comments(thread_id: int, session: Session = Depends(get_session)):
     comments = session.exec(
-        select(Comment).where(Comment.thread_id == thread_id)
-    ).all()
-    if not comments:
-        raise HTTPException(status_code=404, detail="No comments found for this thread")
-    return comments
+        select(Comment, User, Vote)
+        .join(User, Comment.user_id == User.id)
+        .join(Vote, Vote.comment_id == Comment.id, isouter=True)
+        .where(Comment.thread_id == thread_id).order_by(Comment.id.desc())
+    )
+    view = []
+    for c, u, v in comments:
+        comment = CommentView(
+            id=c.id,
+            thread_id=c.thread_id,
+            content=c.content,
+            created_at=c.created_at,
+            parent_comment_id=c.parent_comment_id,
+            user=UserView(
+                id=u.id,
+                username=u.username,
+                email=u.email,
+                role=u.role
+            ),
+            vote=[v] if v else []
+        )
+        view.append(comment)
+        
+    return view
 
 @app.put("/comments/{comment_id}", response_model=Comment)
 def update_comment(comment_id: int, comment: CommentCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):

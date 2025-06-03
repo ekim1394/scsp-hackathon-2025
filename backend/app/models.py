@@ -51,8 +51,8 @@ class Comment(SQLModel, table=True):
 class Vote(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
-    thread_id: Optional[int] = Field(default=None, foreign_key="thread.id")
-    comment_id: Optional[int] = Field(default=None, foreign_key="comment.id")
+    thread_id: Optional[int] = Field(default=None, foreign_key="thread.id", ondelete="CASCADE")
+    comment_id: Optional[int] = Field(default=None, foreign_key="comment.id", ondelete="CASCADE")
     value: int = Field(ge=-1, le=1)
 
     user: Optional[User] = Relationship(back_populates="votes")

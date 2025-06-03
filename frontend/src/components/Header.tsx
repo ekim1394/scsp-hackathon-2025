@@ -1,14 +1,11 @@
-import { Plus } from "lucide-react";
-import { Input } from "../components/ui/input";
+import { useAuth } from "../AuthProvider";
+import CreatePostDialog from "./CreatePostDialog";
+import LoginDialog from "./LoginDialog";
 import { Button } from "./ui/button";
 import { SidebarTrigger } from "./ui/sidebar";
 
 export default function Header() {
-  const handleClick = () => {
-    // Handle the click event for creating a post
-    console.log("Create Post button clicked");
-  };
-
+  const { user, logout } = useAuth();
   const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
     const query: string = (event.target as HTMLInputElement).value;
     console.log("Search query:", query);
@@ -27,24 +24,28 @@ export default function Header() {
           OpenUAV
         </div>
       </div>
-      <div>
+      {/* <div className="flex flex-1 justify-center">
         <Input
           placeholder="Search..."
-          className="w-164 bg-gray-700 text-white"
+          className="w-200 bg-gray-700 text-white"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               handleSearch(e);
             }
           }}
         />
-      </div>
+      </div> */}
       <div>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={handleClick}
-        >
-          <Plus /> Create Post
-        </Button>
+        {user ? (
+          <div className="flex flex-row items-center gap-2">
+            <CreatePostDialog />
+            <Button onClick={logout} style={{ cursor: "pointer" }}>
+              Logout
+            </Button>
+          </div>
+        ) : (
+          <LoginDialog />
+        )}
       </div>
     </header>
   );
