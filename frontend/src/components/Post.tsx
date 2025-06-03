@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { apiClient } from "../lib/utils";
+import { apiClient } from "../lib/client";
 import { useAuth } from "../AuthProvider";
 
 export interface IVote {

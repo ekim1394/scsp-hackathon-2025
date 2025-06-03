@@ -5,7 +5,7 @@ import { useAuth } from "../AuthProvider";
 import Comment, { type IComment } from "../components/Comment";
 import type { IPost } from "../components/Post";
 import Post from "../components/Post";
-import { apiClient } from "../lib/utils";
+import { apiClient } from "../lib/client";
 
 export const Route = createFileRoute("/posts/$postId")({
   component: RouteComponent,

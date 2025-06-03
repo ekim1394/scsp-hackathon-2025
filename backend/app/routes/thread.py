@@ -2,14 +2,16 @@
 
 from datetime import datetime
 from uuid import UUID
+import uuid
 from app.main import get_current_user, get_session
-from app.models import Thread, User, Vote
-from fastapi import Depends
+from app.models import Attachment, Thread, User, Vote
+from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, select
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.routes.user import UserView
+import os
 
 app = APIRouter()
 
@@ -28,7 +30,6 @@ class ThreadView(BaseModel):
     vote: list[Vote]
 
 @app.post("/thread", response_model=Thread)
-
 def create_thread(thread: ThreadCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     thread = Thread(
         title=thread.title,
@@ -121,3 +122,31 @@ def delete_thread(thread_id: int, session: Session = Depends(get_session)):
     session.delete(thread_to_delete)
     session.commit()
     return thread_to_delete
+
+class AttachmentView(BaseModel):
+    id: int
+    thread_id: int
+    file_url: str
+    file_type: str
+
+@app.post("/upload")
+async def upload_file(file: UploadFile, thread_id: int = Form(...), session: Session = Depends(get_session)):
+    tmp_dir = "/tmp"
+    os.makedirs(tmp_dir, exist_ok=True)
+    file_path = os.path.join(tmp_dir, str(uuid.uuid4()))
+    with open(file_path, "wb") as f:
+        file_bytes = await file.read()
+        f.write(file_bytes)
+    attachment = Attachment(
+        thread_id=thread_id,
+        file_url=file_path,
+        file_type= file.filename.split('.')[-1] ,
+    )
+    session.add(attachment)
+    session.commit()
+    return AttachmentView(
+        id=attachment.id,
+        thread_id=attachment.thread_id,
+        file_url=file_path,
+        file_type=file.filename.split('.')[-1] 
+    )

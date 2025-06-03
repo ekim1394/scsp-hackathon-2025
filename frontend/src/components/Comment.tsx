@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ReplyIcon, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../AuthProvider";
-import { apiClient } from "../lib/utils";
+import { apiClient } from "../lib/client";
 import { Button } from "./ui/button";
 
 export interface IVote {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "../lib/utils";
+import { apiClient } from "../lib/client";
 import type { IPost } from "../components/Post";
 import Post from "../components/Post";
 export const Route = createFileRoute("/")({
@@ -20,9 +20,9 @@ function Index() {
   const threads = threadsQuery.data ?? [];
 
   return (
-    <div>
+    <div className="flex flex-col p-4 lg:max-w-4xl w-full mx-auto">
       {threads.length === 0 ? (
-        <div className="text-lg text-center">
+        <div className="text-lg text-center ">
           No threads available. Start a new discussion!
         </div>
       ) : (

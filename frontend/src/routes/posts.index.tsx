@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "../lib/utils";
+import { apiClient } from "../lib/client";
 import type { IPost } from "../components/Post";
 import Post from "../components/Post";
 export const Route = createFileRoute("/posts/")({

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "./lib/utils";
+import { apiClient } from "./lib/client";
 import {
   createContext,
   useContext,
