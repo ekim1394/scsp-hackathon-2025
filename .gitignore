@@ -27,3 +27,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ignore 3d model files
+*.stl
+*.glb
+*.gltf
+*.png

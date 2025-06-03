@@ -79,13 +79,14 @@ export default function CreatePostDialog() {
     currentTarget: HTMLFormElement | undefined;
   }) => {
     event.preventDefault();
-    console.log("event.target:", event.currentTarget);
     const formData = new FormData(event.currentTarget);
     const post = await mutation.mutateAsync({ postTitle, postContent });
-    await fileUpload.mutateAsync({
-      file: formData.get("attachmentFile") as File,
-      thread_id: post.data.id,
-    });
+    if (file) {
+      await fileUpload.mutateAsync({
+        file: formData.get("attachmentFile") as File,
+        thread_id: post.data.id,
+      });
+    }
 
     setPostContent("");
     setPostTitle("");
@@ -178,7 +179,7 @@ export default function CreatePostDialog() {
                   type="file"
                   id="attachmentFile"
                   name="attachmentFile"
-                  accept=".glb,.gltf"
+                  accept=".glb,.gltf,.stl"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] ?? null;

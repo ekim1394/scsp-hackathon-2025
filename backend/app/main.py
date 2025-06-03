@@ -1,6 +1,7 @@
 # dependencies.py
 
 from typing import Annotated
+
 from fastapi import Depends, FastAPI, Form, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -25,7 +26,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    root_path="/api"
+    root_path="/api",
 )
 
 # Allow all origins, methods, and headers (for development)
@@ -37,6 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello, World!"}
@@ -47,9 +49,13 @@ def get_session():
     with Session(engine) as session:
         yield session
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)) -> User:
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -75,24 +81,30 @@ def on_startup():
     SQLModel.metadata.create_all(engine)
 
 
-
 class UserCreate(BaseModel):
     username: str
     email: str | None = None
     password: str
     organization: str | None = None
 
+
 class UserLogin(BaseModel):
     username: str
     password: str
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: int | None = None
 
+
 @app.post("/login", response_model=Token)
-def login(username: Annotated[str, Form()], password: Annotated[str, Form()], session: Session = Depends(get_session)):
+def login(
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    session: Session = Depends(get_session),
+):
     user = session.exec(select(User).where(User.username == username)).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
@@ -100,17 +112,20 @@ def login(username: Annotated[str, Form()], password: Annotated[str, Form()], se
     token = create_access_token(data={"sub": str(user.id)})
     return Token(access_token=token, user_id=user.id)
 
+
 @app.post("/signup", response_model=Token)
 def register(user_create: UserCreate, session: Session = Depends(get_session)):
-    existing = session.exec(select(User).where(User.username == user_create.username)).first()
+    existing = session.exec(
+        select(User).where(User.username == user_create.username)
+    ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
+
     user = User(
         username=user_create.username,
         email=user_create.email,
         password_hash=hash_password(user_create.password),
-        organization=user_create.organization
+        organization=user_create.organization,
     )
     session.add(user)
     session.commit()
@@ -119,19 +134,22 @@ def register(user_create: UserCreate, session: Session = Depends(get_session)):
     token = create_access_token(data={"sub": str(user.id)})
     return Token(access_token=token)
 
+
 @app.get("/me")
 def read_current_user(user: User = Depends(get_current_user)):
     return {
         "id": str(user.id),
         "username": user.username,
         "email": user.email,
-        "role": user.role
+        "role": user.role,
     }
-    
-from app.routes.user import app as user_router
-from app.routes.thread import app as thread_router
-from app.routes.comment import app as comment_router
-from app.routes.vote import app as vote_router
+
+
+from app.routes.comment import app as comment_router  # noqa: E402
+from app.routes.thread import app as thread_router  # noqa: E402
+from app.routes.user import app as user_router  # noqa: E402
+from app.routes.vote import app as vote_router  # noqa: E402
+from app.routes.render import app as render_router  # noqa: E402
 
 app.include_router(
     user_router,
@@ -151,3 +169,7 @@ app.include_router(
     tags=["votes"],
 )
 
+app.include_router(
+    render_router,
+    tags=["render"],
+)

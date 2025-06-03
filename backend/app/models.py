@@ -4,6 +4,7 @@ from datetime import datetime
 
 # ---------- USER ----------
 
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, nullable=False, unique=True)
@@ -17,7 +18,9 @@ class User(SQLModel, table=True):
     comments: List["Comment"] = Relationship(back_populates="user")
     votes: List["Vote"] = Relationship(back_populates="user")
 
+
 # ---------- THREAD ----------
+
 
 class Thread(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -26,7 +29,9 @@ class Thread(SQLModel, table=True):
     content: Optional[str]
     summary: Optional[str]
     category: Optional[str]
-    tags: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))  # PostgreSQL array
+    tags: Optional[List[str]] = Field(
+        default=None, sa_column=Column(JSON)
+    )  # PostgreSQL array
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -34,7 +39,9 @@ class Thread(SQLModel, table=True):
     comments: List["Comment"] = Relationship(back_populates="thread")
     attachments: List["Attachment"] = Relationship(back_populates="thread")
 
+
 # ---------- COMMENT ----------
+
 
 class Comment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -47,18 +54,26 @@ class Comment(SQLModel, table=True):
     thread: Optional[Thread] = Relationship(back_populates="comments")
     user: Optional[User] = Relationship(back_populates="comments")
 
+
 # ---------- VOTE ----------
+
 
 class Vote(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
-    thread_id: Optional[int] = Field(default=None, foreign_key="thread.id", ondelete="CASCADE")
-    comment_id: Optional[int] = Field(default=None, foreign_key="comment.id", ondelete="CASCADE")
+    thread_id: Optional[int] = Field(
+        default=None, foreign_key="thread.id", ondelete="CASCADE"
+    )
+    comment_id: Optional[int] = Field(
+        default=None, foreign_key="comment.id", ondelete="CASCADE"
+    )
     value: int = Field(ge=-1, le=1)
 
     user: Optional[User] = Relationship(back_populates="votes")
 
+
 # ---------- ATTACHMENT ----------
+
 
 class Attachment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -69,7 +84,9 @@ class Attachment(SQLModel, table=True):
 
     thread: Optional[Thread] = Relationship(back_populates="attachments")
 
+
 # ---------- ACCESS KEY ----------
+
 
 class AccessKey(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

@@ -1,5 +1,3 @@
-
-
 from datetime import datetime
 from app.main import get_current_user, get_session
 from app.models import Comment, User, Vote
@@ -11,12 +9,14 @@ from app.routes.user import UserView
 
 app = APIRouter()
 
+
 class CommentCreate(BaseModel):
     thread_id: int
     content: str
     parent_id: int | None = None
     user_id: int | None = None
-    
+
+
 class CommentView(BaseModel):
     id: int
     thread_id: int
@@ -26,29 +26,39 @@ class CommentView(BaseModel):
     user: UserView
     vote: list[Vote] = []
 
+
 @app.post("/comment", response_model=Comment)
-def create_comment(comment: CommentCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
+def create_comment(
+    comment: CommentCreate,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
     if comment.user_id is None:
         comment.user_id = user.id
     new_comment = Comment(
         thread_id=comment.thread_id,
         content=comment.content,
         parent_id=comment.parent_id,
-        user_id=comment.user_id
+        user_id=comment.user_id,
     )
     session.add(new_comment)
     session.commit()
     session.refresh(new_comment)
     return new_comment
 
+
 @app.get("/comments", response_model=list[CommentView])
-def read_all_comments(skip: int = 0, limit: int = 10, session: Session = Depends(get_session)):
+def read_all_comments(
+    skip: int = 0, limit: int = 10, session: Session = Depends(get_session)
+):
     comments = session.exec(
         select(Comment, User, Vote)
         .join(User, Comment.user_id == User.id)
         .join(Vote, Vote.comment_id == Comment.id, isouter=True)
         .where(Comment.user_id == User.id)
-        .offset(skip).limit(limit).order_by(Comment.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .order_by(Comment.id.desc())
     )
     view = []
     for c, u, v in comments:
@@ -65,11 +75,12 @@ def read_all_comments(skip: int = 0, limit: int = 10, session: Session = Depends
                 role=u.role,
                 organization=u.organization,
             ),
-            vote=[v] if v else []
+            vote=[v] if v else [],
         )
         view.append(comment)
-        
+
     return view
+
 
 @app.get("/comments/{thread_id}", response_model=list[CommentView])
 def read_comments(thread_id: int, session: Session = Depends(get_session)):
@@ -77,7 +88,8 @@ def read_comments(thread_id: int, session: Session = Depends(get_session)):
         select(Comment, User, Vote)
         .join(User, Comment.user_id == User.id)
         .join(Vote, Vote.comment_id == Comment.id, isouter=True)
-        .where(Comment.thread_id == thread_id).order_by(Comment.id.desc())
+        .where(Comment.thread_id == thread_id)
+        .order_by(Comment.id.desc())
     )
     view = []
     for c, u, v in comments:
@@ -92,33 +104,53 @@ def read_comments(thread_id: int, session: Session = Depends(get_session)):
                 username=u.username,
                 email=u.email,
                 role=u.role,
-                organization= u.organization,
+                organization=u.organization,
             ),
-            vote=[v] if v else []
+            vote=[v] if v else [],
         )
         view.append(comment)
-        
+
     return view
 
+
 @app.put("/comments/{comment_id}", response_model=Comment)
-def update_comment(comment_id: int, comment: CommentCreate, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
-    comment_to_update = session.exec(select(Comment).where(Comment.id == comment_id, Comment.user_id == user.id)).first()
+def update_comment(
+    comment_id: int,
+    comment: CommentCreate,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    comment_to_update = session.exec(
+        select(Comment).where(Comment.id == comment_id, Comment.user_id == user.id)
+    ).first()
     if not comment_to_update:
-        raise HTTPException(status_code=404, detail="Comment not found or you do not have permission to update it")
-    
+        raise HTTPException(
+            status_code=404,
+            detail="Comment not found or you do not have permission to update it",
+        )
+
     comment_to_update.content = comment.content
     comment_to_update.parent_id = comment.parent_id
     session.commit()
     session.refresh(comment_to_update)
     return comment_to_update
 
+
 @app.delete("/comments/{comment_id}", response_model=Comment)
-def delete_comment(comment_id: int, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
-    comment_to_delete = session.exec(select(Comment).where(Comment.id == comment_id, Comment.user_id == user.id)).first()
+def delete_comment(
+    comment_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    comment_to_delete = session.exec(
+        select(Comment).where(Comment.id == comment_id, Comment.user_id == user.id)
+    ).first()
     if not comment_to_delete:
-        raise HTTPException(status_code=404, detail="Comment not found or you do not have permission to delete it")
-    
+        raise HTTPException(
+            status_code=404,
+            detail="Comment not found or you do not have permission to delete it",
+        )
+
     session.delete(comment_to_delete)
     session.commit()
     return comment_to_delete
-    

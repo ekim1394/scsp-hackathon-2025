@@ -3,12 +3,17 @@ import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { apiClient } from "../lib/client";
 import { useAuth } from "../AuthProvider";
+import { FilePreview } from "./FilePreview";
 
 export interface IVote {
   value: number;
   user_id: number;
 }
 
+export interface IAttachment {
+  file_url: string;
+  file_type: string;
+}
 export interface IPost {
   id: number;
   user_id: number;
@@ -20,13 +25,13 @@ export interface IPost {
   tags: string[];
   summary: string;
   vote: IVote[];
+  attachment: IAttachment;
 }
 
 export default function Post({ thread }: { thread: IPost }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  console.log(thread);
   const voteCount = thread.vote?.reduce((acc, v) => acc + v.value, 0);
 
   const mutation = useMutation({
@@ -49,7 +54,6 @@ export default function Post({ thread }: { thread: IPost }) {
   });
 
   const handleUpvote = (id: number) => {
-    console.log("upvote");
     mutation.mutate({
       postId: id,
       voteType: "upvote",
@@ -57,7 +61,6 @@ export default function Post({ thread }: { thread: IPost }) {
   };
 
   const handleDownvote = (id: number) => {
-    console.log("downvote");
     mutation.mutate({
       postId: id,
       voteType: "downvote",
@@ -67,13 +70,7 @@ export default function Post({ thread }: { thread: IPost }) {
   return (
     <li
       key={thread.id}
-      className="flex flex-row p-4 bg-black text-white shadow rounded-2xl border-white border-2 hover:bg-gray-800 transition-colors duration-200 hover:cursor-pointer"
-      onClick={(e) => {
-        e.stopPropagation();
-        navigate({
-          to: `/posts/${thread.id}`,
-        });
-      }}
+      className="flex flex-row p-4 bg-black text-white shadow rounded-2xl border-white border-2"
     >
       <div className="flex flex-col items-center">
         <button
@@ -121,7 +118,17 @@ export default function Post({ thread }: { thread: IPost }) {
       </div>
       <div className="flex-1 ml-4">
         <div className="flex justify-between items-center mb-2">
-          <div className="font-bold text-xl">{thread.title}</div>
+          <div
+            className="font-bold text-xl hover:text-blue-400 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate({
+                to: `/posts/${thread.id}`,
+              });
+            }}
+          >
+            {thread.title}
+          </div>
           <div>
             {new Date(thread.created_at)
               .toLocaleString("en-US", {
@@ -149,7 +156,20 @@ export default function Post({ thread }: { thread: IPost }) {
               })}
           </div>
         </div>
-        <div className="break-all whitespace-pre-line">{thread.content}</div>
+        <div className="flex flex-row">
+          <div
+            className={`break-all whitespace-pre-line text-white ${
+              thread.attachment ? "w-2/3" : "w-full"
+            }`}
+          >
+            {thread.content}
+          </div>
+          <div>
+            {thread.attachment && (
+              <FilePreview attachment={thread.attachment} />
+            )}
+          </div>
+        </div>
       </div>
     </li>
   );

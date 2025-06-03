@@ -49,6 +49,9 @@ export default function Comment({ comment }: { comment: IComment }) {
       queryClient.invalidateQueries({
         queryKey: ["comments" + comment.thread_id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["comments"],
+      });
     },
   });
 
@@ -152,7 +155,12 @@ export default function Comment({ comment }: { comment: IComment }) {
             variant="ghost"
             size="icon"
             aria-label="downvote"
-            className="bg-black hover:bg-black hover:text-red-700"
+            className={
+              `transition-colors ` +
+              (comment.vote.find((v) => v.user_id === user)?.value === 1
+                ? "text-red-400"
+                : "text-gray-400 hover:text-red-400")
+            }
             onClick={() => handleVote(comment.id, "downvote")}
           >
             <ArrowDown />
