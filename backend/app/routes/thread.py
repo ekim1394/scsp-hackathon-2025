@@ -59,16 +59,16 @@ def read_threads(
     page: int = 0, limit: int = 10, session: Session = Depends(get_session)
 ):
     threads = session.exec(
-        select(Thread, Vote, User, Attachment)
+        select(Thread, User, Attachment)
         .join(User, Thread.user_id == User.id)
-        .join(Vote, Vote.thread_id == Thread.id, isouter=True)
         .join(Attachment, Attachment.thread_id == Thread.id, isouter=True)
         .order_by(Thread.created_at.desc())
         .offset(page * 10)
         .limit(limit)
     )
     view = []
-    for t, v, u, a in threads:
+    thread_votes = session.exec(select(Vote).where(Vote.thread_id is not None)).all()
+    for t, u, a in threads:
         thread = ThreadView(
             id=t.id,
             title=t.title,
@@ -76,8 +76,10 @@ def read_threads(
             created_at=t.created_at,
             updated_at=t.updated_at,
             user=UserView(id=u.id, username=u.username, email=u.email, role=u.role),
-            vote=[v] if v else [],
-            attachment=AttachmentSimpleView(id=a.id, file_url=a.file_url, file_type=a.file_type)
+            vote=[v for v in thread_votes if v.thread_id == t.id],
+            attachment=AttachmentSimpleView(
+                id=a.id, file_url=a.file_url, file_type=a.file_type
+            )
             if a and a.file_url and a.file_type
             else None,
         )
@@ -88,17 +90,17 @@ def read_threads(
 @app.get("/threads/{thread_id}", response_model=ThreadView)
 def read_thread(thread_id: int, session: Session = Depends(get_session)):
     result = session.exec(
-        select(Thread, Vote, User, Attachment)
+        select(Thread, User, Attachment)
         .join(User, Thread.user_id == User.id)
-        .join(Vote, Vote.thread_id == Thread.id, isouter=True)
         .join(Attachment, Attachment.thread_id == Thread.id, isouter=True)
         .where(Thread.id == thread_id)
     ).first()
 
     if not result:
         raise HTTPException(status_code=404)
+    thread_votes = session.exec(select(Vote).where(Vote.thread_id is not None)).all()
 
-    t, v, u, a = result
+    t, u, a = result
     thread = ThreadView(
         id=t.id,
         title=t.title,
@@ -106,8 +108,10 @@ def read_thread(thread_id: int, session: Session = Depends(get_session)):
         created_at=t.created_at,
         updated_at=t.updated_at,
         user=UserView(id=u.id, username=u.username, email=u.email, role=u.role),
-        vote=[v] if v else [],
-        attachment=AttachmentSimpleView(id=a.id, file_url=a.file_url, file_type=a.file_type)
+        vote=[v for v in thread_votes if v.thread_id == t.id],
+        attachment=AttachmentSimpleView(
+            id=a.id, file_url=a.file_url, file_type=a.file_type
+        )
         if a and a.file_url and a.file_type
         else None,
     )

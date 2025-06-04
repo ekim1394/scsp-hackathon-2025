@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }) => mutation.mutate({ username, password });
   const logout = () => {
     localStorage.removeItem("session");
-    toast.message("Logged out successfully");
+    toast.info("Logged out successfully");
     setUser(null);
   };
 

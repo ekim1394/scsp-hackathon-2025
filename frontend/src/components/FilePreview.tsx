@@ -35,7 +35,7 @@ export function FilePreview({ attachment }: { attachment: IAttachment }) {
     download.mutate();
   };
 
-  const render = useMutation({
+  const renderMut = useMutation({
     mutationFn: async () => {
       const res = await apiClient.post(
         `/render/${attachment.id}`,
@@ -55,7 +55,7 @@ export function FilePreview({ attachment }: { attachment: IAttachment }) {
   });
 
   const handleRender = async () => {
-    render.mutate();
+    renderMut.mutate();
   };
 
   return (
@@ -71,10 +71,14 @@ export function FilePreview({ attachment }: { attachment: IAttachment }) {
         <Button
           className="mt-2 bg-blue-600 hover:bg-blue-800"
           onClick={() => handleRender()}
-          disabled={attachment.file_type.toLowerCase() !== "stl"} // Only enable for STL files
+          disabled={
+            attachment.file_type.toLowerCase() !== "stl" || renderMut.isPending
+          } // Only enable for STL files
         >
           {attachment.file_type.toLowerCase() === "stl"
-            ? "Render"
+            ? renderMut.isPending
+              ? "Loading..."
+              : "Render"
             : "Only for .stl"}
         </Button>
         <Dialog
@@ -92,7 +96,7 @@ export function FilePreview({ attachment }: { attachment: IAttachment }) {
                 This image is generated using AI from your 3D model input.
               </DialogDescription>
             </DialogHeader>
-            {render.isError && (
+            {renderMut.isError && (
               <p className="text-red-600">Failed to generate image.</p>
             )}
 

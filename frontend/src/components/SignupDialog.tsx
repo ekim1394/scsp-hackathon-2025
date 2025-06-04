@@ -32,6 +32,11 @@ export default function SignupDialog() {
     setError(null);
     signup({ username, email, organization, password });
     queryClient.invalidateQueries({ queryKey: ["user"] });
+    setUsername("");
+    setPassword("");
+    setEmail("");
+    setOrganization("");
+    setOpen(false);
   };
 
   const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {

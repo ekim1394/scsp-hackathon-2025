@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 async def analyze_glb(file_path, file_type):
     try:
         if file_type.lower() == "glb":
-            mesh = trimesh.load(file_path, force='scene')
+            mesh = trimesh.load(file_path, force="scene")
         else:
             mesh = trimesh.load_mesh(file_path)
     except Exception as e:
@@ -56,7 +56,7 @@ async def analyze_glb(file_path, file_type):
 
     if isinstance(mesh, trimesh.Scene):
         meshes = [g for g in mesh.dump()]
-        combined = trimesh.util.concatenate(meshes)    
+        combined = trimesh.util.concatenate(meshes)
     else:
         combined = mesh
 
@@ -124,7 +124,9 @@ async def analyze_glb(file_path, file_type):
         if not np.isfinite(pose).all():
             logger.error(f"Invalid pose matrix for view {name}: contains NaN or Inf.")
             continue
-        scene.add(camera, pose=pose) # Fails here numpy.linalg.LinAlgError: Eigenvalues did not converge
+        scene.add(
+            camera, pose=pose
+        )  # Fails here numpy.linalg.LinAlgError: Eigenvalues did not converge
         light = pyrender.DirectionalLight(color=np.ones(3), intensity=3.0)
         scene.add(light, pose=pose)
         try:
@@ -148,13 +150,12 @@ async def render(
     """
     Render a 3D model from the uploaded file using openai
     """
-    attachment =session.exec(
-        select(Attachment)
-        .where(Attachment.id == attachment_id)
+    attachment = session.exec(
+        select(Attachment).where(Attachment.id == attachment_id)
     ).first()
-    
+
     logger.info(f"Analyzing {attachment.file_url}")
-    
+
     # Creates images in renders folder
     metadata = await analyze_glb(attachment.file_url, attachment.file_type)
     if "error" in metadata:
@@ -162,7 +163,7 @@ async def render(
 
     # Collect all rendered image paths
     render_paths = sorted(glob.glob("renders/*.png"))
-    
+
     if not render_paths:
         raise HTTPException(
             status_code=500,

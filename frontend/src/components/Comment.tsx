@@ -143,10 +143,12 @@ export default function Comment({ comment }: { comment: IComment }) {
           </Button>
           <span
             className={
-              `transition-colors ` +
-              (comment.vote.find((v) => v.user_id === user)?.value === -1
-                ? "text-red-400"
-                : "text-gray-400 hover:text-red-400")
+              "font-semibold my-1 text-xs " +
+              (voteCount > 0
+                ? "text-green-400"
+                : voteCount < 0
+                  ? "text-red-400"
+                  : "text-white")
             }
           >
             {voteCount}
@@ -157,7 +159,7 @@ export default function Comment({ comment }: { comment: IComment }) {
             aria-label="downvote"
             className={
               `transition-colors ` +
-              (comment.vote.find((v) => v.user_id === user)?.value === 1
+              (comment.vote.find((v) => v.user_id === user)?.value === -1
                 ? "text-red-400"
                 : "text-gray-400 hover:text-red-400")
             }
@@ -165,7 +167,7 @@ export default function Comment({ comment }: { comment: IComment }) {
           >
             <ArrowDown />
           </Button>
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             className="text-blue-500 hover:bg-black hover:text-blue-300"
@@ -173,7 +175,7 @@ export default function Comment({ comment }: { comment: IComment }) {
           >
             <ReplyIcon />
             Reply
-          </Button>
+          </Button> */}
         </div>
       </div>
     </li>

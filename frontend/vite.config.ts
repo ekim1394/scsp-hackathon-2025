@@ -17,6 +17,6 @@ export default defineConfig({
         },
     },
     server: {
-        allowedHosts: ["ab13-108-51-139-190.ngrok-free.app"],
+        allowedHosts: ["*.ngrok-free.app", "openuav.ngrok.dev"],
     }
 });

@@ -5,6 +5,10 @@ import { apiClient } from "../lib/client";
 import { useAuth } from "../AuthProvider";
 import { FilePreview } from "./FilePreview";
 import { toast } from "sonner";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+import React from "react";
 
 export interface IVote {
   value: number;
@@ -177,11 +181,11 @@ export default function Post({ thread }: { thread: IPost }) {
           </div>
           <div className="flex flex-col lg:flex-row">
             <div
-              className={`break-all whitespace-pre-line text-white mb-2 ${
+              className={`break-word whitespace-pre-line text-white mb-2 ${
                 thread.attachment ? "lg:w-2/3 w-full" : "w-full"
               }`}
             >
-              {thread.content}
+              <Markdown remarkPlugins={[remarkGfm]}>{thread.content}</Markdown>
             </div>
             <div>
               {thread.attachment && (

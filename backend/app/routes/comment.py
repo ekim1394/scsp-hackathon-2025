@@ -4,6 +4,7 @@ from app.models import Comment, User, Vote
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
 
 from app.routes.user import UserView
 
@@ -52,15 +53,18 @@ def read_all_comments(
     skip: int = 0, limit: int = 10, session: Session = Depends(get_session)
 ):
     comments = session.exec(
-        select(Comment, User, Vote)
-        .join(User, Comment.user_id == User.id)
-        .join(Vote, Vote.comment_id == Comment.id, isouter=True)
+        select(Comment)
+        .options(
+            selectinload(Comment.user),  # Load associated User
+        )
         .where(Comment.user_id == User.id)
         .offset(skip)
         .order_by(Comment.id.desc())
     )
+    votes = session.exec(select(Vote).where(Vote.comment_id is not None)).all()
+
     view = []
-    for c, u, v in comments:
+    for c in comments:
         comment = CommentView(
             id=c.id,
             thread_id=c.thread_id,
@@ -68,13 +72,13 @@ def read_all_comments(
             created_at=c.created_at,
             parent_comment_id=c.parent_comment_id,
             user=UserView(
-                id=u.id,
-                username=u.username,
-                email=u.email,
-                role=u.role,
-                organization=u.organization,
+                id=c.user.id,
+                username=c.user.username,
+                email=c.user.email,
+                role=c.user.role,
+                organization=c.user.organization,
             ),
-            vote=[v] if v else [],
+            vote=[v for v in votes if v.comment_id == c.id] if votes else [],
         )
         view.append(comment)
 
@@ -84,14 +88,17 @@ def read_all_comments(
 @app.get("/comments/{thread_id}", response_model=list[CommentView])
 def read_comments(thread_id: int, session: Session = Depends(get_session)):
     comments = session.exec(
-        select(Comment, User, Vote)
-        .join(User, Comment.user_id == User.id)
-        .join(Vote, Vote.comment_id == Comment.id, isouter=True)
+        select(Comment)
+        .options(
+            selectinload(Comment.user),  # Load associated User
+        )
         .where(Comment.thread_id == thread_id)
         .order_by(Comment.id.desc())
     )
     view = []
-    for c, u, v in comments:
+    votes = session.exec(select(Vote).where(Vote.comment_id is not None)).all()
+
+    for c in comments:
         comment = CommentView(
             id=c.id,
             thread_id=c.thread_id,
@@ -99,13 +106,13 @@ def read_comments(thread_id: int, session: Session = Depends(get_session)):
             created_at=c.created_at,
             parent_comment_id=c.parent_comment_id,
             user=UserView(
-                id=u.id,
-                username=u.username,
-                email=u.email,
-                role=u.role,
-                organization=u.organization,
+                id=c.user.id,
+                username=c.user.username,
+                email=c.user.email,
+                role=c.user.role,
+                organization=c.user.organization,
             ),
-            vote=[v] if v else [],
+            vote=[v for v in votes if v.comment_id == c.id] if votes else [],
         )
         view.append(comment)
 
