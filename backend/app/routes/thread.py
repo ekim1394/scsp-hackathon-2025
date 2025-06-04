@@ -1,5 +1,7 @@
 from datetime import datetime
 import uuid
+
+from fastapi.responses import FileResponse
 from app.main import get_current_user, get_session
 from app.models import Attachment, Thread, User, Vote
 from fastapi import Depends, Form, UploadFile
@@ -14,6 +16,7 @@ app = APIRouter()
 
 
 class AttachmentSimpleView(BaseModel):
+    id: int
     file_url: str = None
     file_type: str = None
 
@@ -53,7 +56,7 @@ def create_thread(
 
 @app.get("/threads", response_model=list[ThreadView])
 def read_threads(
-    skip: int = 0, limit: int = 10, session: Session = Depends(get_session)
+    page: int = 0, limit: int = 10, session: Session = Depends(get_session)
 ):
     threads = session.exec(
         select(Thread, Vote, User, Attachment)
@@ -61,9 +64,8 @@ def read_threads(
         .join(Vote, Vote.thread_id == Thread.id, isouter=True)
         .join(Attachment, Attachment.thread_id == Thread.id, isouter=True)
         .order_by(Thread.created_at.desc())
-        .offset(skip)
+        .offset(page * 10)
         .limit(limit)
-        
     )
     view = []
     for t, v, u, a in threads:
@@ -75,7 +77,7 @@ def read_threads(
             updated_at=t.updated_at,
             user=UserView(id=u.id, username=u.username, email=u.email, role=u.role),
             vote=[v] if v else [],
-            attachment=AttachmentSimpleView(file_url=a.file_url, file_type=a.file_type)
+            attachment=AttachmentSimpleView(id=a.id, file_url=a.file_url, file_type=a.file_type)
             if a and a.file_url and a.file_type
             else None,
         )
@@ -105,7 +107,7 @@ def read_thread(thread_id: int, session: Session = Depends(get_session)):
         updated_at=t.updated_at,
         user=UserView(id=u.id, username=u.username, email=u.email, role=u.role),
         vote=[v] if v else [],
-        attachment=AttachmentSimpleView(file_url=a.file_url, file_type=a.file_type)
+        attachment=AttachmentSimpleView(id=a.id, file_url=a.file_url, file_type=a.file_type)
         if a and a.file_url and a.file_type
         else None,
     )
@@ -152,13 +154,13 @@ class AttachmentView(BaseModel):
     file_type: str
 
 
-@app.post("/upload")
+@app.post("/file/upload")
 async def upload_file(
     file: UploadFile,
     thread_id: int = Form(...),
     session: Session = Depends(get_session),
 ):
-    tmp_dir = "/Users/eugenekim/code/scsp-hackathon-2025/frontend/public"
+    tmp_dir = "/tmp"
     os.makedirs(tmp_dir, exist_ok=True)
     file_path = os.path.join(tmp_dir, file.filename)
     with open(file_path, "wb") as f:
@@ -166,7 +168,7 @@ async def upload_file(
         f.write(file_bytes)
     attachment = Attachment(
         thread_id=thread_id,
-        file_url=file.filename,
+        file_url=file_path,
         file_type=file.filename.split(".")[-1],
     )
     session.add(attachment)
@@ -174,6 +176,22 @@ async def upload_file(
     return AttachmentView(
         id=attachment.id,
         thread_id=attachment.thread_id,
-        file_url=file.filename,
+        file_url=file_path,
         file_type=file.filename.split(".")[-1],
+    )
+
+
+@app.get("/file/{file_name}")
+async def get_file(file_name: str, session: Session = Depends(get_session)):
+    attachment = session.exec(
+        select(Attachment).where(Attachment.file_url == f"/tmp/{file_name}")
+    ).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if not os.path.exists(attachment.file_url):
+        raise HTTPException(status_code=404, detail="File does not exist")
+
+    return FileResponse(
+        attachment.file_url, filename=attachment.file_url.split("/")[-1]
     )

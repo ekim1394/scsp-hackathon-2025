@@ -1,34 +1,51 @@
 import base64
 import os
-from fastapi import APIRouter, UploadFile
+import shutil
+from textwrap import dedent
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 
 from openai import OpenAI
+from sqlmodel import Session, select
 import trimesh
+from trimesh.exchange.stl import load_stl
+from trimesh.exchange.gltf import load_glb, load_gltf
 import logging
 import pyrender
 import numpy as np
 from PIL import Image
 import glob
 
+from app.main import get_session
+from app.models import Attachment
+
 load_dotenv()
 
 
 app = APIRouter()
 client = OpenAI()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s:%(lineno)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
-async def analyze_glb(file):
+async def analyze_glb(file_path, file_type):
     try:
-        mesh = trimesh.load_mesh(file, file_type="glb", force="mesh")
+        if file_type.lower() == "glb":
+            mesh = trimesh.load(file_path, force='scene')
+        else:
+            mesh = trimesh.load_mesh(file_path)
     except Exception as e:
-        logger.error(f"Failed to load mesh: {e}")
+        logger.exception(f"Failed to load mesh")
         return {"error": f"Failed to load mesh: {e}"}
 
     # Check for mesh validity
-    if hasattr(mesh, "vertices") and (np.isnan(mesh.vertices).any() or np.isinf(mesh.vertices).any()):
+    if hasattr(mesh, "vertices") and (
+        np.isnan(mesh.vertices).any() or np.isinf(mesh.vertices).any()
+    ):
         logger.error("Mesh contains NaN or infinite values in vertices.")
         return {"error": "Mesh contains NaN or infinite values in vertices."}
     if hasattr(mesh, "faces") and (len(mesh.faces) == 0):
@@ -37,16 +54,9 @@ async def analyze_glb(file):
     if hasattr(mesh, "is_watertight") and not mesh.is_watertight:
         logger.warning("Mesh is not watertight. Proceeding, but rendering may fail.")
 
-    info = {
-        "is_scene": isinstance(mesh, trimesh.Scene),
-        "geometry_count": len(mesh.geometry) if isinstance(mesh, trimesh.Scene) else 1,
-        "bounding_box": mesh.bounds.tolist(),
-        "extents": mesh.extents.tolist() if hasattr(mesh, "extents") else None,
-        "vertices": len(mesh.vertices) if hasattr(mesh, "vertices") else 0,
-        "faces": len(mesh.faces) if hasattr(mesh, "faces") else 0,
-    }
     if isinstance(mesh, trimesh.Scene):
-        combined = mesh.dump().sum()
+        meshes = [g for g in mesh.dump()]
+        combined = trimesh.util.concatenate(meshes)    
     else:
         combined = mesh
 
@@ -82,14 +92,20 @@ async def analyze_glb(file):
         else:
             up = np.array([0, 1, 0])
 
+        # Right-hand coordinate system
         right = np.cross(forward, up)
-        right /= np.linalg.norm(right)
+        if np.linalg.norm(right) < 1e-6:
+            right = np.array([1, 0, 0])  # fallback
+        else:
+            right /= np.linalg.norm(right)
+
         true_up = np.cross(right, forward)
 
+        # Build 4x4 pose matrix
         pose = np.eye(4)
         pose[:3, 0] = right
         pose[:3, 1] = true_up
-        pose[:3, 2] = -forward
+        pose[:3, 2] = -forward  # camera looks along -Z
         pose[:3, 3] = position
         return pose
 
@@ -105,7 +121,10 @@ async def analyze_glb(file):
             continue
         camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
         pose = get_camera_pose(az, el, distance, center)
-        scene.add(camera, pose=pose)
+        if not np.isfinite(pose).all():
+            logger.error(f"Invalid pose matrix for view {name}: contains NaN or Inf.")
+            continue
+        scene.add(camera, pose=pose) # Fails here numpy.linalg.LinAlgError: Eigenvalues did not converge
         light = pyrender.DirectionalLight(color=np.ones(3), intensity=3.0)
         scene.add(light, pose=pose)
         try:
@@ -118,22 +137,37 @@ async def analyze_glb(file):
             logger.error(f"Unexpected error during rendering for view {name}: {e}")
             continue
     renderer.delete()
+    return {}
 
-    return info
 
-
-@app.post("/render")
-async def render(file: UploadFile):
+@app.post("/render/{attachment_id}")
+async def render(
+    attachment_id: int,
+    session: Session = Depends(get_session),
+):
     """
     Render a 3D model from the uploaded file using openai
     """
+    attachment =session.exec(
+        select(Attachment)
+        .where(Attachment.id == attachment_id)
+    ).first()
+    
+    logger.info(f"Analyzing {attachment.file_url}")
+    
     # Creates images in renders folder
-    await analyze_glb(file.file)
-
-    # Upload rendered images to OpenAI and request DALL·E to create a 3D render
+    metadata = await analyze_glb(attachment.file_url, attachment.file_type)
+    if "error" in metadata:
+        raise HTTPException(status_code=500, detail=metadata["error"])
 
     # Collect all rendered image paths
     render_paths = sorted(glob.glob("renders/*.png"))
+    
+    if not render_paths:
+        raise HTTPException(
+            status_code=500,
+            detail="No rendered images found. Ensure the model is valid and rendering was successful.",
+        )
 
     # Upload images to OpenAI and collect file IDs
     uploaded_file_ids = []
@@ -143,19 +177,22 @@ async def render(file: UploadFile):
             uploaded_file_ids.append(uploaded.id)
 
     # Compose prompt for DALL·E
-    prompt = """
-        Given these multiple view renders of a 3D object that represents a design for an Unmanned Aerial Vehicle (UAV),
-        create a realistic 3D render of the object as if it were photographed in a studio.
-        
-        The final design should look practical and functional, suitable for a UAV.
-        The renders include views from the front, back, left, right, top, bottom, and an angled view.
-        The object should be detailed and realistic, with a focus on the UAV's design features.
-        The final render should be a high-quality image that captures the essence of the UAV design.
-    """
+    prompt = dedent("""
+        Given a complete set of reference images (front, back, left, right, top, bottom, and an angled perspective) of a 3D-model generate a high-quality, photorealistic render as if it were professionally photographed in a studio environment.
 
-    # Call DALL·E with the uploaded images
+        The final image should:
+        - Use realistic materials (e.g., matte composites, brushed metal, polycarbonate) with subtle lighting and shadows.
+
+        - Be composed with a clean background (e.g., gradient gray or studio white) and soft reflections to enhance depth.
+        
+        - Contain the entire model in the frame, ensuring all angles are visible and well-lit.
+
+        This render should visually communicate the object's readiness for real-world application, balancing aesthetics with realism and technical credibility.
+    """)
+
+    logger.info("Uploading images and generating render...")
     response = client.responses.create(
-        model="gpt-4.1",
+        model="gpt-4.1-mini",
         input=[
             {
                 "role": "user",
@@ -181,9 +218,18 @@ async def render(file: UploadFile):
     ]
     image_data = [output.result for output in image_generation_calls]
 
+    logger.info("Render generation completed.")
+    dir_path = "renders"
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
     if image_data:
         image_base64 = image_data[0]
         with open("final-render.png", "wb") as f:
             f.write(base64.b64decode(image_base64))
+        return FileResponse(
+            "final-render.png",
+            media_type="image/png",
+            filename="render.png",
+        )
     else:
         print(response.output.content)

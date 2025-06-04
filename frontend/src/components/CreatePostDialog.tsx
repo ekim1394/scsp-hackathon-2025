@@ -58,7 +58,7 @@ export default function CreatePostDialog() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("thread_id", thread_id.toString());
-      return apiClient.post("/upload", formData, {
+      return apiClient.post("/file/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -114,7 +114,10 @@ export default function CreatePostDialog() {
           <Plus /> Create Post
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-800 text-white" showCloseButton={false}>
+      <DialogContent
+        className="bg-gray-800 text-white top-1/2"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>Create Post</DialogTitle>
           <DialogDescription>
@@ -151,9 +154,9 @@ export default function CreatePostDialog() {
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="filetype" />
               </SelectTrigger>
-              <SelectContent id="attachment">
-                <SelectItem value="url">URL</SelectItem>
-                <SelectItem value="model">.GLB/.GLTF file</SelectItem>
+              <SelectContent id="attachment" className="bg-gray-800">
+                {/* <SelectItem value="url">URL</SelectItem> */}
+                <SelectItem value="model">3D Model File</SelectItem>
               </SelectContent>
             </Select>
             {attachmentType === "url" && (
@@ -173,13 +176,13 @@ export default function CreatePostDialog() {
                   htmlFor="attachmentFile"
                   className="text-white font-semibold"
                 >
-                  Upload 3D Model (.glb, .gltf)
+                  Upload 3D Model File
                 </Label>
                 <Input
                   type="file"
                   id="attachmentFile"
                   name="attachmentFile"
-                  accept=".glb,.gltf,.stl"
+                  accept=".glb,.stl"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] ?? null;
@@ -193,7 +196,7 @@ export default function CreatePostDialog() {
                   Choose 3D Model File
                 </label>
                 <span className="text-xs text-gray-300">
-                  Only .glb or .gltf files are supported. Max size: 25MB.
+                  .glb/.stl files are supported. Max size: 25MB.
                 </span>
                 {file && (
                   <span className="text-sm text-green-400">

@@ -74,7 +74,7 @@ export default function SignupDialog() {
               <Input id="email" name="email" onChange={handleEmailChange} />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="organization">organization</Label>
+              <Label htmlFor="organization">Organization</Label>
               <Input
                 id="organization"
                 name="organization"

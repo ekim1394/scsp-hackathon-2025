@@ -35,7 +35,10 @@ export default function LoginDialog() {
       <DialogTrigger asChild>
         <Button>Login</Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-800 text-white" showCloseButton={false}>
+      <DialogContent
+        className="bg-gray-800 text-white top-1/4"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>Login</DialogTitle>
         </DialogHeader>

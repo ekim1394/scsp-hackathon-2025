@@ -13,7 +13,7 @@ export default function Header() {
   // };
 
   return (
-    <header className="flex flex-row items-center justify-between p-4 bg-gray-800 text-white z-10">
+    <header className="flex flex-row items-center justify-between p-4 bg-gray-800 text-white z-10 sticky top-0">
       <div className="flex flex-row items-center gap-4">
         <SidebarTrigger />
         <div>

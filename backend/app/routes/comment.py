@@ -57,7 +57,6 @@ def read_all_comments(
         .join(Vote, Vote.comment_id == Comment.id, isouter=True)
         .where(Comment.user_id == User.id)
         .offset(skip)
-        .limit(limit)
         .order_by(Comment.id.desc())
     )
     view = []

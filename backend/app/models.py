@@ -36,8 +36,12 @@ class Thread(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="threads")
-    comments: List["Comment"] = Relationship(back_populates="thread")
-    attachments: List["Attachment"] = Relationship(back_populates="thread")
+    comments: List["Comment"] = Relationship(
+        back_populates="thread", cascade_delete=True
+    )
+    attachments: List["Attachment"] = Relationship(
+        back_populates="thread", cascade_delete=True
+    )
 
 
 # ---------- COMMENT ----------
@@ -45,7 +49,7 @@ class Thread(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    thread_id: int = Field(foreign_key="thread.id")
+    thread_id: int = Field(foreign_key="thread.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id")
     content: str
     parent_comment_id: Optional[int] = Field(default=None, foreign_key="comment.id")
@@ -77,7 +81,7 @@ class Vote(SQLModel, table=True):
 
 class Attachment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    thread_id: int = Field(foreign_key="thread.id")
+    thread_id: int = Field(foreign_key="thread.id", ondelete="CASCADE")
     file_url: str
     file_type: str  # Consider enum: image, video, 3d_model, pdf
     description: Optional[str] = None

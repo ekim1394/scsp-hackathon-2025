@@ -1,21 +1,26 @@
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Bounds, Center, OrbitControls, useGLTF } from "@react-three/drei";
 import { Canvas, useLoader } from "@react-three/fiber";
-import { Suspense } from "react";
 // @ts-expect-error: STLLoader may not have types
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 
 function STLModel({ url }: { url: string }) {
   const geometry = useLoader(STLLoader, url);
   return (
-    <mesh geometry={geometry}>
-      <meshStandardMaterial color="#cccccc" />
-    </mesh>
+    <Center>
+      <mesh geometry={geometry} rotation={[Math.PI, 0, 0]}>
+        <meshStandardMaterial color="#cccccc" />
+      </mesh>
+    </Center>
   );
 }
 
 function GLTFModel({ url }: { url: string }) {
   const gltf = useGLTF(url);
-  return <primitive object={gltf.scene} />;
+  return (
+    <Center>
+      <primitive object={gltf.scene} rotation={[Math.PI, 0, 0]} />;
+    </Center>
+  );
 }
 
 export function ModelLoader({ url }: { url: string }) {
@@ -26,7 +31,9 @@ export function ModelLoader({ url }: { url: string }) {
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
-        {ext === "stl" ? <STLModel url={url} /> : <GLTFModel url={url} />}
+        <Bounds fit clip observe>
+          {ext === "stl" ? <STLModel url={url} /> : <GLTFModel url={url} />}
+        </Bounds>
         <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
       </Canvas>
     </div>
